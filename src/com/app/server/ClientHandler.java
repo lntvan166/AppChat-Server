@@ -16,8 +16,8 @@ public class ClientHandler implements Runnable {
     public static ArrayList<ClientHandler> clientHandlers = new ArrayList<>();
 
     private Socket socket;
-    private BufferedReader bufferedReader;
-    private BufferedWriter bufferedWriter;
+//    private BufferedReader bufferedReader;
+//    private BufferedWriter bufferedWriter;
     private DataOutputStream dataOutputStream;
     private DataInputStream dataInputStream;
     private String clientUsername;
@@ -25,17 +25,17 @@ public class ClientHandler implements Runnable {
     public ClientHandler(Socket socket) {
         try {
             this.socket = socket;
-            this.bufferedWriter = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
-            this.bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+//            this.bufferedWriter = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
+//            this.bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             this.dataOutputStream = new DataOutputStream(socket.getOutputStream());
             this.dataInputStream = new DataInputStream(socket.getInputStream());
-            this.clientUsername = bufferedReader.readLine();
+            this.clientUsername = dataInputStream.readUTF();
             clientHandlers.add(this);
 
             refreshOnlineUser();
 
         } catch (IOException e) {
-            closeEverything(socket, bufferedWriter, bufferedReader);
+            closeEverything(socket, dataInputStream, dataOutputStream);
         }
     }
 
@@ -45,7 +45,7 @@ public class ClientHandler implements Runnable {
 
         while (socket.isConnected()) {
             try {
-                message = bufferedReader.readLine();
+                message = dataInputStream.readUTF();
                 System.out.println("Receive from " + clientUsername + ": " + message);
                 if (Objects.equals(message, "File")) {
                     receiveAndSendFile();
@@ -54,7 +54,7 @@ public class ClientHandler implements Runnable {
                 }
 
             } catch (IOException e) {
-                closeEverything(socket, bufferedWriter, bufferedReader);
+                closeEverything(socket, dataInputStream, dataOutputStream);
                 break;
             }
         }
@@ -62,7 +62,7 @@ public class ClientHandler implements Runnable {
 
     public void receiveAndSendFile() throws IOException {
         System.out.println("---receive:");
-        String userTo = bufferedReader.readLine();
+        String userTo = dataInputStream.readUTF();
         System.out.println(userTo);
 
         int fileNameLength = dataInputStream.readInt();
@@ -86,12 +86,10 @@ public class ClientHandler implements Runnable {
 
                 for (ClientHandler clientHandler : clientHandlers) {
                     if (clientHandler.clientUsername.equals(userTo)) {
-                        clientHandler.bufferedWriter.write("File");
-                        clientHandler.bufferedWriter.newLine();
-                        clientHandler.bufferedWriter.flush();
-                        clientHandler.bufferedWriter.write(clientUsername);
-                        clientHandler.bufferedWriter.newLine();
-                        clientHandler.bufferedWriter.flush();
+                        clientHandler.dataOutputStream.writeUTF("File");
+                        clientHandler.dataOutputStream.flush();
+                        clientHandler.dataOutputStream.writeUTF(clientUsername);
+                        clientHandler.dataOutputStream.flush();
 
                         clientHandler.dataOutputStream.writeInt(fileNameBytes.length);
                         clientHandler.dataOutputStream.write(fileNameBytes);
@@ -129,13 +127,12 @@ public class ClientHandler implements Runnable {
         for (ClientHandler clientHandler : clientHandlers) {
             try {
                 if (clientHandler.clientUsername.equals(userTo)) {
-                    clientHandler.bufferedWriter.write(messageToSend);
+                    clientHandler.dataOutputStream.writeUTF(messageToSend);
                     System.out.println("Send: " + messageToSend);
-                    clientHandler.bufferedWriter.newLine();
-                    clientHandler.bufferedWriter.flush();
+                    clientHandler.dataOutputStream.flush();
                 }
             } catch (IOException e) {
-                closeEverything(socket, bufferedWriter, bufferedReader);
+                closeEverything(socket, dataInputStream, dataOutputStream);
             }
         }
     }
@@ -156,7 +153,7 @@ public class ClientHandler implements Runnable {
         return messageAfterHandle.toString();
     }
 
-    public void closeEverything(Socket socket, BufferedWriter bufferedWriter, BufferedReader bufferedReader) {
+    public void closeEverything(Socket socket, DataInputStream bufferedWriter, DataOutputStream bufferedReader) {
         removeClientHandler();
         try {
             if (bufferedReader != null) {
@@ -182,11 +179,10 @@ public class ClientHandler implements Runnable {
     public void refreshOnlineUser() {
         for (ClientHandler clientHandler : clientHandlers) {
             try {
-                clientHandler.bufferedWriter.write("OnlineUserChange");
-                clientHandler.bufferedWriter.newLine();
-                clientHandler.bufferedWriter.flush();
+                clientHandler.dataOutputStream.writeUTF("OnlineUserChange");
+                clientHandler.dataOutputStream.flush();
             } catch (IOException e) {
-                closeEverything(socket, bufferedWriter, bufferedReader);
+                closeEverything(socket, dataInputStream, dataOutputStream);
             }
         }
     }
