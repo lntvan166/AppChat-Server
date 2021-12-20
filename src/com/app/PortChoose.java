@@ -1,6 +1,6 @@
 package com.app;
 
-import com.app.server.ClientHandler;
+import com.app.server.ServerChat;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
@@ -8,38 +8,51 @@ import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.IOException;
+import java.net.ServerSocket;
 
 /**
  * com.app
  * Create by Le Nguyen Tu Van
- * Date 12/19/2021 - 10:53 PM
+ * Date 12/20/2021 - 4:42 PM
  * Description: ...
  */
-public class ServerUI {
-    private int port;
-
+public class PortChoose {
     private JFrame frameMain;
     private JPanel panelMain;
-    private JLabel countLabel;
-    private JButton cancelButton;
-    private JLabel label1;
+    private JTextField textField1;
+    private JButton submitButton;
 
-    public ServerUI(int port) {
-        this.port = port;
-
-        cancelButton.addActionListener(new ActionListener() {
+    public PortChoose() {
+        submitButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                JFrame cancelFrame = new JFrame("EXIT");
-                if (JOptionPane.showConfirmDialog(cancelFrame, "Confirm if you want to exit", "EXIT",
-                        JOptionPane.YES_NO_OPTION) == JOptionPane.YES_NO_OPTION) {
-                    System.exit(0);
+                int port = Integer.parseInt(textField1.getText());
+
+                ServerSocket serverSocket = null;
+                try {
+                    serverSocket = new ServerSocket(port);
+
+                } catch (IOException ex) {
+                    JOptionPane.showMessageDialog(null,
+                            "Choose another port because this port already in use");
                 }
+
+                ServerUI serverUI = new ServerUI(port);
+                serverUI.start();
+
+                ServerChat serverChat = new ServerChat(serverSocket, serverUI);
+
+
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        serverChat.startServer();
+                    }
+                }).start();
+
+                frameMain.dispose();
             }
         });
-
-        label1.setText("Server is running on port " + port);
-
     }
 
     public void start() {
@@ -59,11 +72,5 @@ public class ServerUI {
         frameMain.setLocationRelativeTo(null);
         frameMain.pack();
         frameMain.setVisible(true);
-        refresh();
-    }
-
-    public void refresh() {
-        int count = ClientHandler.clientHandlers.size();
-        countLabel.setText("Number of online users: " + count);
     }
 }

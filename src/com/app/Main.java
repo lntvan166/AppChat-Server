@@ -13,16 +13,7 @@ import java.net.ServerSocket;
  */
 public class Main {
     public static void main(String[] args) {
-        ServerUI serverUI = new ServerUI();
-        serverUI.start();
-        ServerSocket serverSocket = null;
-        try {
-            serverSocket = new ServerSocket(1606);
-            ServerChat serverChat = new ServerChat(serverSocket, serverUI);
-            serverChat.startServer();
-        } catch (IOException e) {
-            serverUI.catchException(e);
-        }
-
+        PortChoose app = new PortChoose();
+        app.start();
     }
 }

@@ -15,18 +15,11 @@
         <properties/>
         <border type="none"/>
         <children>
-          <component id="37243" class="javax.swing.JLabel">
-            <constraints border-constraint="Center"/>
-            <properties>
-              <horizontalAlignment value="0"/>
-              <text value="Server is running on port 1606"/>
-            </properties>
-          </component>
-          <component id="d2867" class="javax.swing.JLabel">
+          <component id="37243" class="javax.swing.JLabel" binding="label1">
             <constraints border-constraint="South"/>
             <properties>
               <horizontalAlignment value="0"/>
-              <text value="Make sure port 1606 is free to use"/>
+              <text value="Server is running on port 1606"/>
             </properties>
           </component>
         </children>
@@ -35,7 +28,8 @@
         <margin top="0" left="0" bottom="0" right="0"/>
         <constraints>
           <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false">
-            <minimum-size width="300" height="200"/>
+            <minimum-size width="250" height="-1"/>
+            <preferred-size width="-1" height="200"/>
           </grid>
         </constraints>
         <properties/>

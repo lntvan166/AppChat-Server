@@ -3,6 +3,7 @@ package com.app.server;
 import java.io.*;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Objects;
 
 /**
@@ -17,6 +18,8 @@ public class ClientHandler implements Runnable {
     private Socket socket;
     private BufferedReader bufferedReader;
     private BufferedWriter bufferedWriter;
+    private DataOutputStream dataOutputStream;
+    private DataInputStream dataInputStream;
     private String clientUsername;
 
     public ClientHandler(Socket socket) {
@@ -24,6 +27,8 @@ public class ClientHandler implements Runnable {
             this.socket = socket;
             this.bufferedWriter = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
             this.bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            this.dataOutputStream = new DataOutputStream(socket.getOutputStream());
+            this.dataInputStream = new DataInputStream(socket.getInputStream());
             this.clientUsername = bufferedReader.readLine();
             clientHandlers.add(this);
 
@@ -41,13 +46,73 @@ public class ClientHandler implements Runnable {
         while (socket.isConnected()) {
             try {
                 message = bufferedReader.readLine();
-                System.out.println("Receive: " + message);
-                sendMessage(message);
+                System.out.println("Receive from " + clientUsername + ": " + message);
+                if (Objects.equals(message, "File")) {
+                    receiveAndSendFile();
+                } else {
+                    sendMessage(message);
+                }
+
             } catch (IOException e) {
                 closeEverything(socket, bufferedWriter, bufferedReader);
                 break;
             }
         }
+    }
+
+    public void receiveAndSendFile() throws IOException {
+        System.out.println("---receive:");
+        String userTo = bufferedReader.readLine();
+        System.out.println(userTo);
+
+        int fileNameLength = dataInputStream.readInt();
+        System.out.println(fileNameLength);
+
+        if (fileNameLength > 0) {
+            byte[] fileNameBytes = new byte[fileNameLength];
+            dataInputStream.readFully(fileNameBytes, 0, fileNameBytes.length);
+            String filename = new String(fileNameBytes);
+            System.out.println(Arrays.toString(fileNameBytes));
+
+            int fileContentLength = dataInputStream.readInt();
+            System.out.println(fileContentLength);
+
+            if(fileContentLength > 0) {
+                byte[] fileContentBytes = new byte[fileContentLength];
+                dataInputStream.readFully(fileContentBytes, 0, fileContentLength);
+                System.out.println(Arrays.toString(fileContentBytes));
+
+
+
+                for (ClientHandler clientHandler : clientHandlers) {
+                    if (clientHandler.clientUsername.equals(userTo)) {
+                        clientHandler.bufferedWriter.write("File");
+                        clientHandler.bufferedWriter.newLine();
+                        clientHandler.bufferedWriter.flush();
+                        clientHandler.bufferedWriter.write(clientUsername);
+                        clientHandler.bufferedWriter.newLine();
+                        clientHandler.bufferedWriter.flush();
+
+                        clientHandler.dataOutputStream.writeInt(fileNameBytes.length);
+                        clientHandler.dataOutputStream.write(fileNameBytes);
+
+                        clientHandler.dataOutputStream.writeInt(fileContentBytes.length);
+                        clientHandler.dataOutputStream.write(fileContentBytes);
+
+                        System.out.println("--------send:");
+                        System.out.println("File");
+                        System.out.println(userTo);
+                        System.out.println(fileNameBytes.length);
+                        System.out.println(Arrays.toString(fileNameBytes));
+                        System.out.println(fileContentBytes.length);
+                        System.out.println(Arrays.toString(fileContentBytes));
+
+                    }
+                }
+
+            }
+        }
+
     }
 
     public void sendMessage(String message) {
@@ -59,7 +124,7 @@ public class ClientHandler implements Runnable {
 
 
         String messageToSend = typeHandle(type, userFrom, userTo, bodyMessage);
-        if(clientHandlers.size()==1)messageToSend += "noOneOnline";
+        if (clientHandlers.size() == 1) messageToSend += "noOneOnline";
 
         for (ClientHandler clientHandler : clientHandlers) {
             try {
@@ -80,9 +145,9 @@ public class ClientHandler implements Runnable {
         if (Objects.equals(type, "message")) {
             messageAfterHandle = new StringBuilder(type + "@#@" + userFrom + "@#@" + message);
         }
-        if(Objects.equals(type, "GetUserOnline")) {
+        if (Objects.equals(type, "GetUserOnline")) {
             messageAfterHandle.append(type).append("@#@").append(userFrom).append("@#@");
-            for(ClientHandler clientHandler : clientHandlers) {
+            for (ClientHandler clientHandler : clientHandlers) {
                 if (!clientHandler.clientUsername.equals(clientUsername)) {
                     messageAfterHandle.append(clientHandler.clientUsername).append(" ");
                 }
