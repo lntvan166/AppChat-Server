@@ -26,31 +26,42 @@ public class PortChoose {
         submitButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                int port = Integer.parseInt(textField1.getText());
-
-                ServerSocket serverSocket = null;
+                int port = -1;
                 try {
-                    serverSocket = new ServerSocket(port);
-
-                } catch (IOException ex) {
-                    JOptionPane.showMessageDialog(null,
-                            "Choose another port because this port already in use");
+                    port = Integer.parseInt(textField1.getText());
+                } catch (NumberFormatException ex) {
+                    JOptionPane.showMessageDialog(null, "Port must be a number!");
                 }
 
-                ServerUI serverUI = new ServerUI(port);
-                serverUI.start();
+                if (port > 0) {
+                    ServerSocket serverSocket = null;
+                    try {
+                        serverSocket = new ServerSocket(port);
 
-                ServerChat serverChat = new ServerChat(serverSocket, serverUI);
-
-
-                new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        serverChat.startServer();
+                    } catch (IOException ex) {
+                        JOptionPane.showMessageDialog(null,
+                                "Choose another port because this port already in use");
                     }
-                }).start();
 
-                frameMain.dispose();
+                    ServerUI serverUI = new ServerUI(port);
+                    serverUI.start();
+
+                    ServerChat serverChat = new ServerChat(serverSocket, serverUI);
+
+
+                    new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            serverChat.startServer();
+                        }
+                    }).start();
+
+                    frameMain.dispose();
+                }
+                else {
+                    JOptionPane.showMessageDialog(null, "Port invalid");
+                }
+
             }
         });
     }
