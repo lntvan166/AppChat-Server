@@ -1,5 +1,8 @@
 package com.app.server;
 
+import com.app.util.AppUtil;
+import com.app.util.User;
+
 import java.io.*;
 import java.net.Socket;
 import java.util.ArrayList;
@@ -25,15 +28,34 @@ public class ClientHandler implements Runnable {
     public ClientHandler(Socket socket) {
         try {
             this.socket = socket;
-//            this.bufferedWriter = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
-//            this.bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             this.dataOutputStream = new DataOutputStream(socket.getOutputStream());
             this.dataInputStream = new DataInputStream(socket.getInputStream());
-            this.clientUsername = dataInputStream.readUTF();
-            clientHandlers.add(this);
 
-            refreshOnlineUser();
+            String method = dataInputStream.readUTF();
+            String username = dataInputStream.readUTF();
+            String password = dataInputStream.readUTF();
 
+            if (method.equals("auth")) {
+                if (AppUtil.authUser(username, password)) {
+                    dataOutputStream.writeUTF("true");
+                    this.clientUsername = dataInputStream.readUTF();
+                    clientHandlers.add(this);
+
+                    refreshOnlineUser();
+                } else {
+                    dataOutputStream.writeUTF("false");
+                    closeEverything(socket, dataInputStream, dataOutputStream);
+                }
+            } else {
+                if(AppUtil.isContainUser(username)) {
+                    dataOutputStream.writeUTF("exist");
+                } else {
+                    AppUtil.userList.add(new User(username, password));
+                    AppUtil.writeUser(AppUtil.userList);
+                    dataOutputStream.writeUTF("success");
+                }
+                closeEverything(socket, dataInputStream, dataOutputStream);
+            }
         } catch (IOException e) {
             closeEverything(socket, dataInputStream, dataOutputStream);
         }
